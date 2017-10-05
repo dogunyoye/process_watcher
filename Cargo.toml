@@ -1,0 +1,6 @@
+[package]
+name = "process_watcher"
+version = "0.1.0"
+authors = ["Dimeji Ogunyoye <dimejiogunyoye@googlemail.com>"]
+
+[dependencies]
