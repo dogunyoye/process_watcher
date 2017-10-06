@@ -1,11 +1,11 @@
-# Usage
-Add the following crate import at the top of your ```main.rs```
+## Usage
+Add the following crate import
 ```extern crate process_watcher;```
 
 Also include the following trait to be implemented
 ```use process_watcher::ProcessWatcherCallback;```
 
-# Example
+## Example
 ```
 extern crate process_watcher;
 
@@ -29,3 +29,7 @@ fn main() {
 	process_watcher::watch(&callback);
 }
 ```
+
+## License
+
+See [LICENSE](LICENSE) file.
