@@ -13,10 +13,6 @@ use process_watcher::ProcessWatcherCallback;
 
 struct PWCallback { }
 
-impl PWCallback {
-
-}
-
 impl ProcessWatcherCallback for PWCallback {
 	fn on_open(&self, pid: u32) -> () {
 		println!("OnOpen: {}", pid);
