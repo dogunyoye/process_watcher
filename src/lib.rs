@@ -60,6 +60,10 @@ fn get_processes(callback: &ProcessWatcherCallback) -> () {
     sets.curr_set.clear();
 }
 
-pub fn watch(callback: &ProcessWatcherCallback) -> () {
+pub fn watch_with_callback(callback: &ProcessWatcherCallback) -> () {
 	get_processes(callback); 
+}
+
+pub fn watch_with_closure(on_open: &Fn(i32) -> (), on_close: &Fn(i32) -> ()) {
+    //Implement me
 }
