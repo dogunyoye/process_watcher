@@ -11,8 +11,7 @@ pub trait ProcessWatcherCallback {
     fn on_close(&self, pid: u32) -> ();
 }
 
-fn get_processes(callback: &ProcessWatcherCallback) -> () {
-    let mut sets = ProcessSets { prev_set: HashSet::new(), curr_set: HashSet::new() };
+fn get_processes(sets: &mut ProcessSets) -> (HashSet<u32>, HashSet<u32>) {
 
     let child = Command::new("/bin/ps").arg("-e")
         .stdout(Stdio::piped()).spawn().expect("process spawn failed");
@@ -37,31 +36,35 @@ fn get_processes(callback: &ProcessWatcherCallback) -> () {
         }
     }
 
+    let open_set;
+    let mut closed_set: HashSet<u32> = HashSet::new();
+
     //first run, the previous set will be empty
     if sets.prev_set.is_empty() {
-        for x in sets.curr_set.iter() {
-            callback.on_open(x.clone());
-        }
+        open_set = sets.curr_set.iter().cloned().collect();
     }
     else {
-        let open_set: HashSet<u32> = sets.curr_set.difference(&sets.prev_set).cloned().collect();
-        let closed_set: HashSet<u32> = sets.prev_set.difference(&sets.curr_set).cloned().collect();
-
-        for opened in open_set.iter() {
-            callback.on_open(opened.clone());
-        }
-
-        for closed in closed_set.iter() {
-            callback.on_close(closed.clone());
-        }
+        open_set = sets.curr_set.difference(&sets.prev_set).cloned().collect();
+        closed_set = sets.prev_set.difference(&sets.curr_set).cloned().collect();
     }
 
     sets.prev_set = sets.curr_set.clone();
     sets.curr_set.clear();
+
+    return (open_set, closed_set);
 }
 
 pub fn watch_with_callback(callback: &ProcessWatcherCallback) -> () {
-	get_processes(callback); 
+    let mut sets = ProcessSets { prev_set: HashSet::new(), curr_set: HashSet::new() };
+	let changed_sets = get_processes(&mut sets);
+
+    for open in changed_sets.0.iter() {
+        callback.on_open(open.clone());
+    }
+
+    for close in changed_sets.1.iter() {
+        callback.on_close(close.clone());
+    }
 }
 
 pub fn watch_with_closure(on_open: &Fn(i32) -> (), on_close: &Fn(i32) -> ()) {
