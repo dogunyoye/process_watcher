@@ -3,16 +3,22 @@ use std::collections::HashSet;
 use std::thread;
 
 struct ProcessSets {
-    prev_set: HashSet<u32>,
-    curr_set: HashSet<u32>,
+    prev_set: HashSet<Process>,
+    curr_set: HashSet<Process>,
 }
 
-pub trait ProcessWatcherCallback : Send + Sync {
-    fn on_open(&self, pid: u32) -> ();
-    fn on_close(&self, pid: u32) -> ();
+#[derive(PartialEq, Eq, Clone, Hash)]
+pub struct Process {
+    pub pid: u32,
+    pub description: String,
 }
 
-fn get_processes(sets: &mut ProcessSets) -> (HashSet<u32>, HashSet<u32>) {
+pub trait ProcessWatcherCallback : Send {
+    fn on_open(&self, process: Process) -> ();
+    fn on_close(&self, process: Process) -> ();
+}
+
+fn get_processes(sets: &mut ProcessSets) -> (HashSet<Process>, HashSet<Process>) {
 
     let child = Command::new("/bin/ps").arg("-e")
         .stdout(Stdio::piped()).spawn().expect("process spawn failed");
@@ -33,12 +39,15 @@ fn get_processes(sets: &mut ProcessSets) -> (HashSet<u32>, HashSet<u32>) {
                 Err(_) => continue,
             };
 
-            sets.curr_set.insert(pid);
+            fields.next();
+            fields.next();
+            let desc : String = fields.next().unwrap().to_owned();
+            sets.curr_set.insert(Process { pid: pid, description: desc });
         }
     }
 
     let open_set;
-    let mut closed_set: HashSet<u32> = HashSet::new();
+    let mut closed_set: HashSet<Process> = HashSet::new();
 
     //first run, the previous set will be empty
     if sets.prev_set.is_empty() {
@@ -57,7 +66,7 @@ fn get_processes(sets: &mut ProcessSets) -> (HashSet<u32>, HashSet<u32>) {
 
 pub fn watch_with_callback<TCallback : 'static + ProcessWatcherCallback>(callback: TCallback) -> () {
     let mut sets = ProcessSets { prev_set: HashSet::new(), curr_set: HashSet::new() };
-    //let call = callback;
+
     thread::spawn( move || {
         
         loop {
@@ -74,7 +83,7 @@ pub fn watch_with_callback<TCallback : 'static + ProcessWatcherCallback>(callbac
     });
 }
 
-pub fn watch_with_closure(on_open: &Fn(u32), on_close: &Fn(u32)) {
+pub fn watch_with_closure(on_open: &Fn(Process), on_close: &Fn(Process)) {
     let mut sets = ProcessSets { prev_set: HashSet::new(), curr_set: HashSet::new() };
     let changed_sets = get_processes(&mut sets);
 
