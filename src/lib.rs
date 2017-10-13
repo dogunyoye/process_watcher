@@ -1,12 +1,13 @@
 use std::process::{Command, Stdio};
 use std::collections::HashSet;
+use std::thread;
 
 struct ProcessSets {
     prev_set: HashSet<u32>,
     curr_set: HashSet<u32>,
 }
 
-pub trait ProcessWatcherCallback {
+pub trait ProcessWatcherCallback : Send + Sync {
     fn on_open(&self, pid: u32) -> ();
     fn on_close(&self, pid: u32) -> ();
 }
@@ -54,20 +55,26 @@ fn get_processes(sets: &mut ProcessSets) -> (HashSet<u32>, HashSet<u32>) {
     return (open_set, closed_set);
 }
 
-pub fn watch_with_callback(callback: &ProcessWatcherCallback) -> () {
+pub fn watch_with_callback<TCallback : 'static + ProcessWatcherCallback>(callback: TCallback) -> () {
     let mut sets = ProcessSets { prev_set: HashSet::new(), curr_set: HashSet::new() };
-	let changed_sets = get_processes(&mut sets);
+    //let call = callback;
+    thread::spawn( move || {
+        
+        loop {
+            let changed_sets = get_processes(&mut sets);    
 
-    for open in changed_sets.0.iter() {
-        callback.on_open(open.clone());
-    }
+            for open in changed_sets.0.iter() {
+                callback.on_open(open.clone());
+            }
 
-    for close in changed_sets.1.iter() {
-        callback.on_close(close.clone());
-    }
+            for close in changed_sets.1.iter() {
+                callback.on_close(close.clone());
+            }
+        }
+    });
 }
 
-pub fn watch_with_closure(on_open: &Fn(u32) -> (), on_close: &Fn(u32) -> ()) {
+pub fn watch_with_closure(on_open: &Fn(u32), on_close: &Fn(u32)) {
     let mut sets = ProcessSets { prev_set: HashSet::new(), curr_set: HashSet::new() };
     let changed_sets = get_processes(&mut sets);
 
