@@ -42,7 +42,11 @@ fn get_processes(sets: &mut ProcessSets) -> (HashSet<Process>, HashSet<Process>)
             fields.next();
             fields.next();
             let desc : String = fields.next().unwrap().to_owned();
-            sets.curr_set.insert(Process { pid: pid, description: desc });
+
+            //filtering processes opened by calling "/bin/ps"
+            if desc.ne("/bin/ps") {
+                sets.curr_set.insert(Process { pid: pid, description: desc });
+            }
         }
     }
 
