@@ -10,16 +10,17 @@ Also include the following trait to be implemented
 extern crate process_watcher;
 
 use process_watcher::ProcessWatcherCallback;
+use process_watcher::Process;
 
 struct PWCallback { }
 
 impl ProcessWatcherCallback for PWCallback {
-	fn on_open(&self, pid: u32) -> () {
-		println!("OnOpen: {}", pid);
+	fn on_open(&self, process: Process) -> () {
+		println!("OnOpen - pid: {}, desc: {}", process.pid, process.description);
 	}
 
-	fn on_close(&self, pid: u32) -> () {
-		println!("OnClose: {}", pid);
+	fn on_close(&self, process: Process) -> () {
+		println!("OnClose - pid: {}, desc: {}", process.pid, process.description);
 	}
 }
 
