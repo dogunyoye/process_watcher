@@ -28,6 +28,7 @@ fn main() {
 
 	let callback = PWCallback { };
 	process_watcher::watch_with_callback(&callback);
+	loop { };
 }
 ```
 
