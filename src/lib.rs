@@ -68,7 +68,7 @@ fn get_processes(sets: &mut ProcessSets) -> (HashSet<Process>, HashSet<Process>)
     return (open_set, closed_set);
 }
 
-pub fn watch_with_callback<TCallback : 'static + ProcessWatcherCallback>(callback: TCallback) -> () {
+pub fn watch_with_callback<TCallback : 'static + ProcessWatcherCallback>(callback: TCallback) {
     let mut sets = ProcessSets { prev_set: HashSet::new(), curr_set: HashSet::new() };
 
     thread::spawn( move || {
@@ -87,15 +87,23 @@ pub fn watch_with_callback<TCallback : 'static + ProcessWatcherCallback>(callbac
     });
 }
 
-pub fn watch_with_closure(on_open: &Fn(Process), on_close: &Fn(Process)) {
+pub fn watch_with_closure<F, G>(on_open: F, on_close: G)
+    where F : 'static + Fn(Process) + Send, G : 'static + Fn(Process) + Send {
+
     let mut sets = ProcessSets { prev_set: HashSet::new(), curr_set: HashSet::new() };
-    let changed_sets = get_processes(&mut sets);
 
-    for open in changed_sets.0.iter() {
-        on_open(open.clone());
-    }
+    thread::spawn( move || {
+        
+        loop {
+            let changed_sets = get_processes(&mut sets);    
 
-    for close in changed_sets.1.iter() {
-        on_close(close.clone());
-    }
+            for open in changed_sets.0.iter() {
+                on_open(open.clone());
+            }
+
+            for close in changed_sets.1.iter() {
+                on_close(close.clone());
+            }
+        }
+    });
 }
