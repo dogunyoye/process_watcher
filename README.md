@@ -27,7 +27,7 @@ impl ProcessWatcherCallback for PWCallback {
 fn main() {
 
 	let callback = PWCallback { };
-	process_watcher::watch_with_callback(&callback);
+	process_watcher::watch_with_callback(callback);
 	loop { };
 }
 ```
